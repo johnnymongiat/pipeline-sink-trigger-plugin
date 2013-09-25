@@ -1,0 +1,17 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="Schedule" field="spec">
+    <f:textarea rows="5" style="width:100%"/>
+  </f:entry>
+  <f:entry title="Root project of build pipeline graph" field="rootProjectName">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Sink project of build pipeline graph" field="sinkProjectName">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Projects to be excluded from build pipeline graph" field="excludedProjectNames">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Ignore non-successful upstream dependency builds" field="ignoreNonSuccessfulUpstreamDependencyBuilds">
+      <f:checkbox />
+    </f:entry>
+</j:jelly>
