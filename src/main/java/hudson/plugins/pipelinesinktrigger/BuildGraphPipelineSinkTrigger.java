@@ -105,7 +105,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
 				
 				final DirectedGraph<AbstractProject<?,?>, String> graph = toDirectedGraph(Hudson.getInstance().getDependencyGraph(), rootProject, exclusions);
 				//LOGGER.log(Level.INFO, String.format("The build pipeline graph: %s", graph.toString()));//TODO pretty print
-				toDepthFirstSequence(Hudson.getInstance().getDependencyGraph(), rootProject, exclusions);
+				//toDepthFirstSequence(Hudson.getInstance().getDependencyGraph(), rootProject, exclusions);
 				triggerBuildOfSinkIfNecessary(graph, rootProject, sinkProject);
 			}
 			catch (Exception e) {
@@ -197,7 +197,8 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
 			hudson.tasks.Messages.BuildTrigger_InQueue(sinkProjectName));
 	}
 	
-	@SuppressWarnings("rawtypes")//TODO
+	//TODO alternative to using JGrapht
+	/*@SuppressWarnings("rawtypes")
 	private List<AbstractProject<?,?>> toDepthFirstSequence(DependencyGraph dependencyGraph, AbstractProject<?,?> root, Set<String> exclusions) {
 		final StringBuilder sb = new StringBuilder();
 		final List<AbstractProject<?,?>> sequence = new ArrayList<AbstractProject<?,?>>(0);
@@ -279,7 +280,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
 		final boolean isBuildScheduled = sink.scheduleBuild(new BuildGraphPipelineSinkTriggerCause());
 		LOGGER.log(Level.INFO, isBuildScheduled ? hudson.tasks.Messages.BuildTrigger_Triggering(sinkProjectName) : 
 			hudson.tasks.Messages.BuildTrigger_InQueue(sinkProjectName));
-	}
+	}*/
 	
 
 	@Extension
