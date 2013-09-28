@@ -146,6 +146,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                         prettyPrinter.append(", ");
                     }
                     prettyPrinter.append(child.getName());
+					index++;
                 }
             }
             prettyPrinter.append("}");
