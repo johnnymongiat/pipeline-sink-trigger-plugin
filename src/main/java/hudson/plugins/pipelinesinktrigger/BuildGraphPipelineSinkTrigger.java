@@ -2,7 +2,6 @@ package hudson.plugins.pipelinesinktrigger;
 
 import hudson.Extension;
 import hudson.model.BuildableItem;
-import hudson.model.DependencyGraph;
 import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.TopLevelItem;
