@@ -105,7 +105,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                     exclusions.add(excludedProjectItem.getName());
                 }
 
-                final DirectedGraph<AbstractProject<?,?>, String> graph = toDirectedGraph(Hudson.getInstance().getDependencyGraph(), rootProject, exclusions);
+                final DirectedGraph<AbstractProject<?,?>, String> graph = constructDirectedGraph(rootProject, exclusions);
                 //TODO should we check if the graph has cycle(s) - if so then fail...
                 final CycleDetector<AbstractProject<?,?>, String> cycleDetector = new CycleDetector<AbstractProject<?,?>, String>(graph);
                 if (cycleDetector.detectCycles()) {
@@ -120,7 +120,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
     }
 
     @SuppressWarnings("rawtypes")
-    private DirectedGraph<AbstractProject<?,?>, String> toDirectedGraph(DependencyGraph dependencyGraph, AbstractProject<?,?> root, Set<String> exclusions) {
+    private DirectedGraph<AbstractProject<?,?>, String> constructDirectedGraph(AbstractProject<?,?> root, Set<String> exclusions) {
         final DirectedGraph<AbstractProject<?,?>, String> graph = new DefaultDirectedGraph<AbstractProject<?,?>, String>(
                 new EdgeFactory<AbstractProject<?,?>, String>() {
                     public String createEdge(AbstractProject<?,?> source, AbstractProject<?,?> target) {
