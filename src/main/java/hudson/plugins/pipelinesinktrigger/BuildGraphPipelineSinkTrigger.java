@@ -108,7 +108,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                 //TODO should we check if the graph has cycle(s) - if so then fail...
                 final CycleDetector<AbstractProject<?,?>, String> cycleDetector = new CycleDetector<AbstractProject<?,?>, String>(graph);
                 if (cycleDetector.detectCycles()) {
-                    throw new Exception(String.format("A build of '%s' will not be scheduled: build pipeline graph contains cycle(s)", sinkProjectName));
+                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_PipelineGraphContainsCycles(sinkProjectName));
                 }
                 triggerBuildOfSinkIfNecessary(graph, rootProject, sinkProject);
             }
