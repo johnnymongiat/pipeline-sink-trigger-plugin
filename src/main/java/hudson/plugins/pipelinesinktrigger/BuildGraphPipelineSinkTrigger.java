@@ -75,44 +75,50 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
     @Override
     public void run() {
         if (!Hudson.getInstance().isQuietingDown()) {
-            LOGGER.log(Level.INFO, String.format("Deciding if a build of '%s' should be triggered...", sinkProjectName));
+            LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DecidingIfBuildShouldBeTriggered(sinkProjectName));
             try {
                 final TopLevelItem rootProjectItem = Hudson.getInstance().getItem(rootProjectName);
                 if (rootProjectItem == null) {
-                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_RootProjectDoesNotExist(rootProjectName));
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_RootProjectDoesNotExist(rootProjectName));
+                    return;
                 }
                 final AbstractProject<?,?> rootProject = (AbstractProject<?,?>) rootProjectItem;
                 if (rootProject.isDisabled()) {
-                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_RootProjectDisabled(rootProjectName));
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_RootProjectDisabled(rootProjectName));
+                    return;
                 }
 
                 final TopLevelItem sinkProjectItem = Hudson.getInstance().getItem(sinkProjectName);
                 if (sinkProjectItem == null) {
-                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_SinkProjectDoesNotExist(sinkProjectName));
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_SinkProjectDoesNotExist(sinkProjectName));
+                    return;
                 }
                 final AbstractProject<?,?> sinkProject = (AbstractProject<?,?>) sinkProjectItem;
                 if (sinkProject.isDisabled()) {
-                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_SinkProjectDisabled(sinkProjectName));
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_SinkProjectDisabled(sinkProjectName));
+                    return;
                 }
 
                 final Set<String> exclusions = new HashSet<String>();
                 for (String excludedPojectName : StringUtils.split(excludedProjectNames, ',')) {
                     final TopLevelItem excludedProjectItem = Hudson.getInstance().getItem(excludedPojectName.trim());
                     if (excludedProjectItem == null) {
-                        throw new Exception(Messages.BuildGraphPipelineSinkTrigger_ExcludedProjectDoesNotExist(excludedPojectName.trim()));
+                        LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_ExcludedProjectDoesNotExist(excludedPojectName.trim()));
+                        return;
                     }
                     exclusions.add(excludedProjectItem.getName());
                 }
 
                 final DirectedGraph<AbstractProject<?,?>, String> graph = constructDirectedGraph(rootProject, exclusions);
-                //TODO should we check if the graph has cycle(s) - if so then fail...
                 final CycleDetector<AbstractProject<?,?>, String> cycleDetector = new CycleDetector<AbstractProject<?,?>, String>(graph);
                 if (cycleDetector.detectCycles()) {
-                    throw new Exception(Messages.BuildGraphPipelineSinkTrigger_PipelineGraphContainsCycles(sinkProjectName));
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_PipelineGraphContainsCycles(sinkProjectName));
+                    return;
                 }
                 triggerBuildOfSinkIfNecessary(graph, rootProject, sinkProject);
             }
             catch (Exception e) {
+                // Swallow the exception and log.
                 LOGGER.log(Level.SEVERE, "Encountered an error during trigger execution.", e);
             }
         }
@@ -127,7 +133,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                     }
                 });
 
-        final StringBuilder prettyPrinter = new StringBuilder();
+        final StringBuilder prettyPrinter = new StringBuilder(); // Used for printing the pipeline graph as an adjacency list matrix.
         final Stack<AbstractProject<?,?>> stack = new Stack<AbstractProject<?,?>>();
         graph.addVertex(root);
         stack.push(root);
@@ -146,7 +152,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                         prettyPrinter.append(", ");
                     }
                     prettyPrinter.append(child.getName());
-					index++;
+                    index++;
                 }
             }
             prettyPrinter.append("}");
