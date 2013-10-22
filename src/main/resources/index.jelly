@@ -4,5 +4,5 @@
   Since we don't really have anything dynamic here, let's just use static HTML. 
 -->
 <div>
-  This plugin is a sample plugin to explain how to write a Hudson plugin.
+  This plugin provides a trigger primarily used for periodically scheduling a build of a configured sink job if and only if the corresponding build pipeline graph is inactive, stable, and stale.
 </div>

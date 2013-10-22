@@ -2,16 +2,16 @@
   <f:entry title="Schedule" field="spec">
     <f:textarea rows="5" style="width:100%"/>
   </f:entry>
-  <f:entry title="Root project of build pipeline graph" field="rootProjectName">
+  <f:entry title="Root job of build pipeline graph" field="rootProjectName">
     <f:textbox />
   </f:entry>
-  <f:entry title="Sink project of build pipeline graph" field="sinkProjectName">
+  <f:entry title="Sink job of build pipeline graph" field="sinkProjectName">
     <f:textbox />
   </f:entry>
-  <f:entry title="Projects to be excluded from build pipeline graph" field="excludedProjectNames">
+  <f:entry title="Jobs to be excluded from build pipeline graph" field="excludedProjectNames">
     <f:textbox />
   </f:entry>
-  <f:entry title="Ignore non-successful upstream dependency builds" field="ignoreNonSuccessfulUpstreamDependencyBuilds">
-      <f:checkbox />
+  <f:entry title="" field="ignoreNonSuccessfulUpstreamDependencyBuilds">
+      <f:checkbox /> Ignore non-successful upstream dependency builds
     </f:entry>
 </j:jelly>

@@ -37,9 +37,25 @@ import org.jgrapht.traverse.DepthFirstIterator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+import com.google.common.base.Strings;
+
+/**
+ * {@link Trigger} primarily used for periodically scheduling a build of a configured sink job if and only if the corresponding build pipeline graph
+ * is inactive, stable, and stale:
+ * <ul>
+ *   <li><b>Inactive:</b> None of the jobs that make up the nodes of the build pipeline graph are currently running, or scheduled in the build queue.</li>
+ *   <li><b>Stable:</b> The last build (if present) for each job that make up the nodes of the build pipeline graph were successful. This rule can be relaxed
+ *   by selecting the <b>Ignore non-successful upstream dependency builds</b> option (not recommended).</li>
+ *   <li><b>Stale:</b> The last build of the sink job was prior to any of the build jobs that make up the nodes of the build pipeline graph.</li>
+ * </ul>
+ * 
+ * <p>All rules must comply in order for a build of the sink job to be scheduled.</p>
+ */
 public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
 
     private static final Logger LOGGER = Logger.getLogger(BuildGraphPipelineSinkTrigger.class.getName());
+
+    private static final String MARKER = Strings.repeat("=", 100);
 
     private String rootProjectName;
     private String sinkProjectName;
@@ -75,6 +91,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
     @Override
     public void run() {
         if (!Hudson.getInstance().isQuietingDown()) {
+            LOGGER.log(Level.INFO, MARKER);
             LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DecidingIfBuildShouldBeTriggered(sinkProjectName));
             try {
                 final TopLevelItem rootProjectItem = Hudson.getInstance().getItem(rootProjectName);
@@ -121,6 +138,9 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                 // Swallow the exception and log.
                 LOGGER.log(Level.SEVERE, "Encountered an error during trigger execution.", e);
             }
+            finally {
+                LOGGER.log(Level.INFO, MARKER);
+            }
         }
     }
 
@@ -155,8 +175,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                     index++;
                 }
             }
-            prettyPrinter.append("}");
-            prettyPrinter.append(String.format("%n"));
+            prettyPrinter.append(String.format("}%n"));
         }
         LOGGER.log(Level.INFO, String.format("The build pipeline graph rooted at '%s':%n%s", root.getName(), prettyPrinter.toString()));
         return graph;
@@ -348,7 +367,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                         try {
                             p.save();
                         } catch (IOException e) {
-                            LOGGER.log(Level.WARNING, "Failed to persist project setting during rename from " + oldName + " to " + newName, e);
+                            LOGGER.log(Level.WARNING, String.format("Failed to persist project setting during rename from %s to %s", oldName, newName), e);
                         }
                     }
                 }
