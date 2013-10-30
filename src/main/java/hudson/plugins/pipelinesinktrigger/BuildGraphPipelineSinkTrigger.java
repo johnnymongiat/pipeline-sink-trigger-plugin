@@ -61,15 +61,17 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
     private String sinkProjectName;
     private String excludedProjectNames;
     private final boolean ignoreNonSuccessfulUpstreamDependencyBuilds;
+    private final boolean verbose;
 
     @DataBoundConstructor
     public BuildGraphPipelineSinkTrigger(String spec, String rootProjectName, String sinkProjectName, String excludedProjectNames,
-            boolean ignoreNonSuccessfulUpstreamDependencyBuilds) throws RecognitionException {
+            boolean ignoreNonSuccessfulUpstreamDependencyBuilds, boolean verbose) throws RecognitionException {
         super(spec);
         this.rootProjectName = rootProjectName;
         this.sinkProjectName = sinkProjectName;
         this.excludedProjectNames = excludedProjectNames;
         this.ignoreNonSuccessfulUpstreamDependencyBuilds = ignoreNonSuccessfulUpstreamDependencyBuilds;
+        this.verbose = verbose;
     }
 
     public String getRootProjectName() {
@@ -88,11 +90,15 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
         return ignoreNonSuccessfulUpstreamDependencyBuilds;
     }
 
+    public boolean isVerbose() {
+        return verbose;
+    }
+
     @Override
     public void run() {
         if (!Hudson.getInstance().isQuietingDown()) {
             LOGGER.log(Level.INFO, MARKER);
-            LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DecidingIfBuildShouldBeTriggered(sinkProjectName));
+            LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DecidingIfBuildShouldBeTriggered(this.job.getName(), sinkProjectName));
             try {
                 final TopLevelItem rootProjectItem = Hudson.getInstance().getItem(rootProjectName);
                 if (rootProjectItem == null) {
@@ -149,7 +155,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
         final DirectedGraph<AbstractProject<?,?>, String> graph = new DefaultDirectedGraph<AbstractProject<?,?>, String>(
                 new EdgeFactory<AbstractProject<?,?>, String>() {
                     public String createEdge(AbstractProject<?,?> source, AbstractProject<?,?> target) {
-                        return String.format("'%s' -----> '%s'", source.getName(), target.getName());
+                        return String.format("'%s' --> '%s'", source.getName(), target.getName());
                     }
                 });
 
@@ -177,7 +183,11 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
             }
             prettyPrinter.append(String.format("}%n"));
         }
-        LOGGER.log(Level.INFO, String.format("The build pipeline graph rooted at '%s':%n%s", root.getName(), prettyPrinter.toString()));
+
+        if (verbose) {
+            LOGGER.log(Level.INFO, String.format("The build pipeline graph rooted at '%s':%n%s", root.getName(), prettyPrinter.toString()));
+        }
+
         return graph;
     }
 

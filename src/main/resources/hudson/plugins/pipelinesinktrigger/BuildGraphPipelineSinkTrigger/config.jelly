@@ -13,5 +13,8 @@
   </f:entry>
   <f:entry title="" field="ignoreNonSuccessfulUpstreamDependencyBuilds">
       <f:checkbox /> Ignore non-successful upstream dependency builds
-    </f:entry>
+  </f:entry>
+  <f:entry title="" field="verbose">
+      <f:checkbox /> Enable verbose logging
+  </f:entry>
 </j:jelly>
