@@ -66,12 +66,27 @@ graph relies on will be ignored when determining if a build of the sink project 
 
 ## Building
 
-TODO
+You will need a Java Development Kit (>= 1.5) and [Maven](http://maven.apache.org/).
+
+In your Maven configuration (settings.xml) file, under the **pluginGroups** tag, add the:
+
+    <pluginGroup>org.eclipse.hudson.tools</pluginGroup>
+    
+To build:
+
+    mvn clean verify
+    
+To run locally:
+
+    mvn hpi:run
+
+Then you can access the embedded Hudson instance at (http://localhost:8080/).
 
 ## Notes
 
-TODO  
+This has been developed against Hudson version 3.0.1-b2 only. Running this plugin under Jenkins is not supported (although adding support in a Jenkins
+environment should not be too difficult).
 
 ## License
 
-TODO  
+The MIT License (MIT)  
