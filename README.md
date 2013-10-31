@@ -70,7 +70,7 @@ graph relies on will be ignored when determining if a build of the sink project 
 
 You will need a Java Development Kit (>= 1.5) and [Maven](http://maven.apache.org/).
 
-In your Maven configuration (settings.xml) file, under the **pluginGroups** tag, add the:
+In your Maven configuration (settings.xml) file, under the **pluginGroups** tag, add:
 
     <pluginGroup>org.eclipse.hudson.tools</pluginGroup>
     
