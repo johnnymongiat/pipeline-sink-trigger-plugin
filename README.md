@@ -80,7 +80,7 @@ To run locally:
 
     mvn hpi:run
 
-Then you can access the embedded Hudson instance at (http://localhost:8080/).
+Then you can access the embedded Hudson instance at [http://localhost:8080/](http://localhost:8080/).
 
 ## Notes
 
