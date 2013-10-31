@@ -14,7 +14,7 @@ All rules must comply in order for a build of the sink job to be scheduled.
 Suppose you are building a software product which is assembled from multiple components, and these components (developed by different teams perhaps) themselves 
 have inter-dependencies with each other, you effectively end up with a build pipeline that can be modelled as a graph (i.e. tree), for example:
 
-![ScreenShot](https://github.com/johnnymongiat/pipeline-sink-trigger-plugin/blob/master/misc/Build-Pipeline.png)
+![BuildPipelineScreenshot](https://raw.github.com/johnnymongiat/pipeline-sink-trigger-plugin/master/misc/Build-Pipeline.png)
 
 Using the above example, we see that **Component 1** (which is built by Hudson - represented by the **Job 1** node) has a dependency on **Component Root**
 (which is built by Hudson - represented by the **Job (Root)** node). Furthermore, we see that **Component 2**, **Component 3**, and **Component 4** have
@@ -51,7 +51,7 @@ has been detected, yet try to avoid unnecessary repetive builds (Hudson has no s
 
 ## Configuration
 
-![ScreenShot](https://github.com/johnnymongiat/pipeline-sink-trigger-plugin/blob/master/misc/JobConfigurationExample.png)
+![JobConfigurationExampleScreenshot](https://raw.github.com/johnnymongiat/pipeline-sink-trigger-plugin/master/misc/JobConfigurationExample.png)
 
 *   **Schedule:** The cron-like expression used for periodically testing if a build of the configured sink job should be scheduled or not 
 (for example, **\* \* \* \* \*** will run the this plugin's trigger every minute).
