@@ -51,10 +51,12 @@ has been detected, yet try to avoid unnecessary repetive builds (Hudson has no s
 
 ## Configuration
 
+Create a new Hudson job configuration (for example MyProduct-Trigger-Observer), and configure the following _Build Trigger_:
+
 ![JobConfigurationExampleScreenshot](misc/JobConfigurationExample.png)
 
 *   **Schedule:** The cron-like expression used for periodically testing if a build of the configured sink job should be scheduled or not 
-(for example, **\* \* \* \* \*** will run the this plugin's trigger every minute).
+(for example, \* \* \* \* \* will run the this plugin's trigger every minute).
 *   **Root job of build pipeline graph:** The root project of the build pipeline graph.
 *   **Sink job of build pipeline graph:** The sink project of the build pipeline graph.
 *   **Jobs to be excluded from build pipeline graph:** Comma-separated list of projects that are part of the build pipeline graph, but should be excluded 
