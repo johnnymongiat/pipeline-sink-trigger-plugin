@@ -51,7 +51,7 @@ has been detected, yet try to avoid unnecessary repetive builds (Hudson has no s
 
 ## Configuration
 
-![JobConfigurationExampleScreenshot](https://raw.github.com/johnnymongiat/pipeline-sink-trigger-plugin/master/misc/JobConfigurationExample.png)
+![JobConfigurationExampleScreenshot](misc/JobConfigurationExample.png)
 
 *   **Schedule:** The cron-like expression used for periodically testing if a build of the configured sink job should be scheduled or not 
 (for example, **\* \* \* \* \*** will run the this plugin's trigger every minute).
