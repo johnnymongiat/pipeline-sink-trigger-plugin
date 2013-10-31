@@ -76,6 +76,9 @@ To build:
 
     mvn clean verify
     
+The corresponding _pipeline-sink-trigger-plugin.hpi_ file will generated under the **target** directory. You can then install the plugin in a
+Hudson server using this file.
+    
 To run locally:
 
     mvn hpi:run
