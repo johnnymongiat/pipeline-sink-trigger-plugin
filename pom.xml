@@ -8,9 +8,51 @@
     </parent>
     <groupId>com.compuware.hudson.plugins</groupId>
 	<artifactId>pipeline-sink-trigger-plugin</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.1.0-SNAPSHOT</version>
 	<name>Hudson :: Pipeline Sink Trigger Plugin</name>
     <packaging>hpi</packaging>
+    
+    <developers>
+        <developer>
+            <name>Johnny Mongiat</name>
+            <email>johnnymongiat@gmail.com</email>
+            <timezone>-5</timezone>
+        </developer>
+    </developers>
+    
+    <scm>
+        <connection>scm:git:https://github.com/johnnymongiat/pipeline-sink-trigger-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/johnnymongiat/pipeline-sink-trigger-plugin.git</developerConnection>
+        <url>https://github.com/johnnymongiat/pipeline-sink-trigger-plugin.git</url>
+    </scm>
+    
+    <issueManagement>
+        <system>github</system>
+        <url>https://github.com/johnnymongiat/pipeline-sink-trigger-plugin/issues</url>
+    </issueManagement>
+    
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>http://opensource.org/licenses/MIT</url>
+            <distribution>manual</distribution>
+        </license>
+    </licenses>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.4.1</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <preparationGoals>clean verify</preparationGoals>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 	<dependencies>
 		<dependency>
