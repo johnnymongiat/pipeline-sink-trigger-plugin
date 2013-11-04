@@ -46,15 +46,21 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <!-- empty arguments to avoid activating the 'sonatype-oss-release' profile which is specified in the top level parent -->
-                    <arguments />
+                    <arguments>-DskipTests</arguments>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                     <preparationGoals>clean verify</preparationGoals>
-                    <prepareVerifyArgs />
+                    <prepareVerifyArgs>-P foo</prepareVerifyArgs>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>foo</id>
+        </profile>
+    </profiles>
 
 	<dependencies>
 		<dependency>
