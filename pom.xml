@@ -46,10 +46,12 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.4.2</version>
                 <configuration>
+                    <!-- empty arguments to avoid activating the 'sonatype-oss-release' profile which is specified in the top level parent -->
+                    <arguments />
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                     <preparationGoals>clean verify</preparationGoals>
-                    <prepareVerifyArgs></prepareVerifyArgs>
+                    <prepareVerifyArgs />
                 </configuration>
             </plugin>
         </plugins>
