@@ -44,7 +44,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.4.2</version>
                 <configuration>
                     <!-- empty arguments to avoid activating the 'sonatype-oss-release' profile which is specified in the top level parent -->
                     <arguments />
