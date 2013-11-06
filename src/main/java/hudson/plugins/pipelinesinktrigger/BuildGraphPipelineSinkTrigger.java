@@ -18,7 +18,9 @@ import hudson.util.FormValidation;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -38,6 +40,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 
 /**
  * {@link Trigger} primarily used for periodically scheduling a build of a configured sink job if and only if the corresponding build pipeline graph
@@ -130,6 +133,11 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
                         return;
                     }
                     exclusions.add(excludedProjectItem.getName());
+                }
+
+                if (sinkProject.isBuilding()) {
+                    LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_SkippingTriggerSinceSinkProjectIsBuilding(sinkProjectName));
+                    return;
                 }
 
                 final DirectedGraph<AbstractProject<?,?>, String> graph = constructDirectedGraph(rootProject, exclusions);
@@ -365,8 +373,59 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
         return false;
     }
 
+    /**
+     * Called from {@link BuildGraphPipelineSinkTrigger.DefaultItemListener} when a job is deleted. Any changes due to the
+     * deletion of the specified job are only limited to the excluded project names field.
+     *
+     * @return {@code true} if this {@link BuildGraphPipelineSinkTrigger} is changed and needs to be saved, otherwise {@code false}.
+     */
+    public boolean onJobDeleted(String nameOfDeletedJob) {
+        boolean changed = false;
+        if (StringUtils.stripToEmpty(excludedProjectNames).length() > 0) {
+            final Set<String> setOfExclusions = Sets.newLinkedHashSet();
+            setOfExclusions.addAll(Arrays.asList(StringUtils.split(excludedProjectNames, ',')));
+            final Iterator<String> itr = setOfExclusions.iterator();
+            while (itr.hasNext()) {
+                final String exclusion = itr.next();
+                if (exclusion.trim().equals(nameOfDeletedJob)) {
+                    itr.remove();
+                    changed = true;
+                }
+            }
+            if (changed) {
+                final StringBuilder sb = new StringBuilder();
+                int i = 0;
+                for (String exclusion : setOfExclusions) {
+                    sb.append(exclusion.trim());
+                    if (i < setOfExclusions.size() - 1) {
+                        sb.append(',');
+                    }
+                    i++;
+                }
+                excludedProjectNames = sb.toString();
+            }
+        }
+        return changed;
+    }
+
     @Extension
     public static final class DefaultItemListener extends ItemListener {
+
+        @Override
+        public void onDeleted(Item item) {
+            for (Project<?, ?> p : Hudson.getInstance().getProjects()) {
+                final BuildGraphPipelineSinkTrigger trigger = p.getTrigger(BuildGraphPipelineSinkTrigger.class);
+                if (trigger != null) {
+                    if (trigger.onJobDeleted(item.getName())) {
+                        try {
+                            p.save();
+                        } catch (IOException e) {
+                            LOGGER.log(Level.WARNING, String.format("Failed to persist project setting during deletion of %s", item.getName()), e);
+                        }
+                    }
+                }
+            }
+        }
 
         @Override
         public void onRenamed(Item item, String oldName, String newName) {
