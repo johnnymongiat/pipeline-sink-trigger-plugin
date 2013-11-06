@@ -48,7 +48,7 @@
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                     <preparationGoals>clean verify</preparationGoals>
                     <!-- This prevents the 'sonatype-oss-release' from being activated (refer to the comments for the 'disable-sonatype-oss-release' profile) -->
-                    <arguments>-DskipTests</arguments>
+                    <arguments>-Ddummy</arguments>
                     <prepareVerifyArgs>-P disable-sonatype-oss-release</prepareVerifyArgs>
                 </configuration>
             </plugin>
