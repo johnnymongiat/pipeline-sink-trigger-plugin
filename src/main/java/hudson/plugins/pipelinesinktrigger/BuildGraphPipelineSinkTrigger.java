@@ -1,7 +1,6 @@
 package hudson.plugins.pipelinesinktrigger;
 
 import hudson.Extension;
-import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.TopLevelItem;
@@ -16,9 +15,11 @@ import hudson.triggers.TriggerDescriptor;
 import hudson.triggers.TimerTrigger;
 import hudson.util.FormValidation;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.logging.Logger;
 import javax.servlet.ServletException;
 
 import org.antlr.runtime.RecognitionException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.EdgeFactory;
@@ -39,8 +41,12 @@ import org.jgrapht.traverse.DepthFirstIterator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
 /**
  * {@link Trigger} primarily used for periodically scheduling a build of a configured sink job if and only if the corresponding build pipeline graph
@@ -54,11 +60,13 @@ import com.google.common.collect.Sets;
  * 
  * <p>All rules must comply in order for a build of the sink job to be scheduled.</p>
  */
-public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
+public class BuildGraphPipelineSinkTrigger extends Trigger<AbstractProject<?,?>> {
 
     private static final Logger LOGGER = Logger.getLogger(BuildGraphPipelineSinkTrigger.class.getName());
 
     private static final String MARKER = Strings.repeat("=", 100);
+
+    private static final String CONTEXT_FINGERPRINT_FILE_NM = "pipeline-context.fingerprint";
 
     private String rootProjectName;
     private String sinkProjectName;
@@ -199,9 +207,10 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
         return graph;
     }
 
-    private void triggerBuildOfSinkIfNecessary(DirectedGraph<AbstractProject<?,?>, String> graph, AbstractProject<?,?> root, AbstractProject<?,?> sink) {
+    private void triggerBuildOfSinkIfNecessary(DirectedGraph<AbstractProject<?,?>, String> graph, AbstractProject<?,?> root, AbstractProject<?,?> sink)
+            throws IOException {
+        final List<String> lastBuildContexts = Lists.newArrayList();
         final List<String> listOfNonSuccessfulUpstreamProjectBuilds = new ArrayList<String>();
-        long maxCompletionTimestamp = Long.MIN_VALUE;
         final DepthFirstIterator<AbstractProject<?,?>, String> itr = new DepthFirstIterator<AbstractProject<?,?>, String>(graph, root);
         while (itr.hasNext()) {
             final AbstractProject<?,?> project = itr.next();
@@ -211,15 +220,13 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
             }
 
             final Run<?,?> lastBuild = project.getLastBuild();
-            if (lastBuild != null) {
-                if (lastBuild.getResult().isBetterOrEqualTo(Result.UNSTABLE)) {
-                    final long completedAt = lastBuild.getTimeInMillis() + lastBuild.getDuration();
-                    maxCompletionTimestamp = Math.max(maxCompletionTimestamp, completedAt);
-                }
-                else {
-                    listOfNonSuccessfulUpstreamProjectBuilds.add(project.getName());
-                }
+            if (lastBuild != null && lastBuild.getResult().isWorseThan(Result.UNSTABLE)) {
+                listOfNonSuccessfulUpstreamProjectBuilds.add(project.getName());
             }
+
+            // Capture a contextual "fingerprint" (note: the fingerprint is composed of the project's full name, and last build id (if present), so
+            // if a project is renamed during its existence, then it can impact the detection of changes between consecutive polls of this trigger).
+            lastBuildContexts.add(String.format("%s(%s)", project.getFullName(), (lastBuild == null ? "" : lastBuild.getId())));
         }
 
         if (!listOfNonSuccessfulUpstreamProjectBuilds.isEmpty()) {
@@ -237,22 +244,34 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<BuildableItem> {
             LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_IgnoringNonSuccessfulUpstreamDependencyBuilds(sb.toString()));
         }
 
-        boolean isStale = false;
-        final Run<?,?> lastSuccessfulBuildOfSink = sink.getLastSuccessfulBuild();
-        if (lastSuccessfulBuildOfSink != null) {
-            final long completedAt = lastSuccessfulBuildOfSink.getTimeInMillis() + lastSuccessfulBuildOfSink.getDuration();
-            if (completedAt >= maxCompletionTimestamp) {
-                LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_NoUpstreamDependencyBuildChanges(sinkProjectName));
-                return;
-            }
-            isStale = true;
+        // Determine if a build of the sink has already been triggered due to upstream dependency build changes.
+        final String currentContext = toSha1(lastBuildContexts);
+        final String prevContext = readContextFile();
+        if (currentContext.equals(prevContext)) {
+            LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_NoUpstreamDependencyBuildChanges(sinkProjectName));
+            return;
         }
 
-        LOGGER.log(Level.INFO, isStale ? Messages.BuildGraphPipelineSinkTrigger_DetectedUpstreamDependencyBuildChanges(sinkProjectName) :
-            Messages.BuildGraphPipelineSinkTrigger_BuildSink(sinkProjectName));
+        // A change has been detected, so update the context, and schedule a build of the sink project.
+        writeContextFile(currentContext);
+        LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DetectedUpstreamDependencyBuildChanges(sinkProjectName));
         final boolean isBuildScheduled = sink.scheduleBuild(new BuildGraphPipelineSinkTriggerCause());
         LOGGER.log(Level.INFO, isBuildScheduled ? hudson.tasks.Messages.BuildTrigger_Triggering(sinkProjectName) :
             hudson.tasks.Messages.BuildTrigger_InQueue(sinkProjectName));
+    }
+
+    private String toSha1(List<String> lastBuildContexts) {
+        Collections.sort(lastBuildContexts);
+        return DigestUtils.shaHex(Joiner.on(';').join(lastBuildContexts));
+    }
+
+    private String readContextFile() throws IOException {
+        final File file = new File(this.job.getRootDir(), CONTEXT_FINGERPRINT_FILE_NM);
+        return file.exists() ? Files.readFirstLine(file, Charsets.UTF_8) : null;
+    }
+
+    private void writeContextFile(String context) throws IOException {
+        Files.write(context, new File(this.job.getRootDir(), CONTEXT_FINGERPRINT_FILE_NM), Charsets.UTF_8);
     }
 
     @Extension
