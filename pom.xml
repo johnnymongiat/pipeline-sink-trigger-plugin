@@ -7,7 +7,7 @@
     </parent>
     <groupId>com.compuware.hudson.plugins</groupId>
 	<artifactId>pipeline-sink-trigger-plugin</artifactId>
-	<version>0.4.0-SNAPSHOT</version>
+	<version>0.4.0</version>
 	<name>Hudson :: Pipeline Sink Trigger Plugin</name>
     <packaging>hpi</packaging>
     
