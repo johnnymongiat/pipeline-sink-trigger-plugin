@@ -209,7 +209,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<AbstractProject<?,?>>
 
     private void triggerBuildOfSinkIfNecessary(DirectedGraph<AbstractProject<?,?>, String> graph, AbstractProject<?,?> root, AbstractProject<?,?> sink)
             throws IOException {
-        final List<String> lastBuildContexts = Lists.newArrayList();
+        final List<String> lastBuildFingerprints = Lists.newArrayList();
         final List<String> listOfNonSuccessfulUpstreamProjectBuilds = new ArrayList<String>();
         final DepthFirstIterator<AbstractProject<?,?>, String> itr = new DepthFirstIterator<AbstractProject<?,?>, String>(graph, root);
         while (itr.hasNext()) {
@@ -226,7 +226,7 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<AbstractProject<?,?>>
 
             // Capture a contextual "fingerprint" (note: the fingerprint is composed of the project's full name, and last build id (if present), so
             // if a project is renamed during its existence, then it can impact the detection of changes between consecutive polls of this trigger).
-            lastBuildContexts.add(String.format("%s(%s)", project.getFullName(), (lastBuild == null ? "" : lastBuild.getId())));
+            lastBuildFingerprints.add(String.format("%s(%s)", project.getFullName(), (lastBuild == null ? "" : lastBuild.getId())));
         }
 
         if (!listOfNonSuccessfulUpstreamProjectBuilds.isEmpty()) {
@@ -245,33 +245,42 @@ public class BuildGraphPipelineSinkTrigger extends Trigger<AbstractProject<?,?>>
         }
 
         // Determine if a build of the sink has already been triggered due to upstream dependency build changes.
-        final String currentContext = toSha1(lastBuildContexts);
-        final String prevContext = readContextFile();
-        if (currentContext.equals(prevContext)) {
+        final String currentFingerprint = calculateFingerprint(lastBuildFingerprints);
+        final String prevFingerprint = readFingerprint();
+
+        // Prevent a build of the sink project from being triggered upon initial setup of the trigger job itself (i.e. the previous fingerprint
+        // information will not exist when the first poll has been issued). Persist the initial fingerprint, and from this point onwards, any
+        // changes in the build pipeline graph will be detected.
+        if (prevFingerprint == null) {
+            persistFingerprint(currentFingerprint);
+            LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_NoPreviousFingerprintToCompareAgainst(sinkProjectName));
+            return;
+        }
+        if (currentFingerprint.equals(prevFingerprint)) {
             LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_NoUpstreamDependencyBuildChanges(sinkProjectName));
             return;
         }
 
         // A change has been detected, so update the context, and schedule a build of the sink project.
-        writeContextFile(currentContext);
+        persistFingerprint(currentFingerprint);
         LOGGER.log(Level.INFO, Messages.BuildGraphPipelineSinkTrigger_DetectedUpstreamDependencyBuildChanges(sinkProjectName));
         final boolean isBuildScheduled = sink.scheduleBuild(new BuildGraphPipelineSinkTriggerCause());
         LOGGER.log(Level.INFO, isBuildScheduled ? hudson.tasks.Messages.BuildTrigger_Triggering(sinkProjectName) :
             hudson.tasks.Messages.BuildTrigger_InQueue(sinkProjectName));
     }
 
-    private String toSha1(List<String> lastBuildContexts) {
-        Collections.sort(lastBuildContexts);
-        return DigestUtils.shaHex(Joiner.on(';').join(lastBuildContexts));
+    private String calculateFingerprint(List<String> lastBuildFingerprints) {
+        Collections.sort(lastBuildFingerprints);
+        return DigestUtils.shaHex(Joiner.on(';').join(lastBuildFingerprints));
     }
 
-    private String readContextFile() throws IOException {
+    private String readFingerprint() throws IOException {
         final File file = new File(this.job.getRootDir(), CONTEXT_FINGERPRINT_FILE_NM);
         return file.exists() ? Files.readFirstLine(file, Charsets.UTF_8) : null;
     }
 
-    private void writeContextFile(String context) throws IOException {
-        Files.write(context, new File(this.job.getRootDir(), CONTEXT_FINGERPRINT_FILE_NM), Charsets.UTF_8);
+    private void persistFingerprint(String fingerprint) throws IOException {
+        Files.write(fingerprint, new File(this.job.getRootDir(), CONTEXT_FINGERPRINT_FILE_NM), Charsets.UTF_8);
     }
 
     @Extension
